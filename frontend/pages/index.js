@@ -15,15 +15,18 @@ export default function Home() {
         .then(res => res.json())
         .then(data => setWelcomeMsg(data.message))
         
-      // 获取仓库信息
-      fetch('https://api.github.com/user/repos?sort=updated&per_page=3', {
-        headers: {
-          Authorization: `token ${session.accessToken}`,
-          Accept: 'application/vnd.github.v3+json'
-        }
-      })
-        .then(res => res.json())
-        .then(data => setRepos(data.slice(0, 3)))
+      
+      // 仅GitHub用户获取仓库信息
+      if (session.provider === 'github') {
+        fetch('https://api.github.com/user/repos?sort=updated&per_page=3', {
+          headers: {
+            Authorization: `token ${session.accessToken}`,
+            Accept: 'application/vnd.github.v3+json'
+          }
+        })
+          .then(res => res.json())
+          .then(data => setRepos(data.slice(0, 3)))
+      }
     }
   }, [session])
 
@@ -33,12 +36,20 @@ export default function Home() {
           {!session && (
             <div className="text-center">
               <h1 className="text-2xl font-bold text-gray-800 mb-6">欢迎使用DG Helper</h1>
-              <button 
-                className="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
-                onClick={() => signIn('github')}
-              >
-                使用GitHub登录
-              </button>
+              <div className="space-y-4">
+                <button 
+                  className="w-full bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
+                  onClick={() => signIn('github')}
+                >
+                  使用GitHub登录
+                </button>
+                <button 
+                  className="w-full bg-red-500 text-white px-8 py-3 rounded-lg hover:bg-red-600 transition-colors shadow-md"
+                  onClick={() => signIn('google')}
+                >
+                  使用Google登录
+                </button>
+              </div>
             </div>
           )}
           
@@ -70,40 +81,65 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="w-full">
-                <h3 className="text-xl font-semibold text-gray-800 mb-6 text-center">最近更新的仓库</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {repos.map(repo => (
-                    <div key={repo.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                      <div className="p-6">
-                        <div className="flex items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-3">
-                              <a 
-                                href={repo.html_url} 
-                                target="_blank"
-                                className="text-lg font-bold text-gray-900 hover:text-indigo-600"
-                              >
-                                {repo.name}
-                              </a>
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                                {repo.language || 'Unknown'}
-                              </span>
-                            </div>
-                            <p className="text-gray-600 mb-4">
-                              {repo.description || '无描述'}
-                            </p>
-                            <div className="flex items-center text-sm text-gray-500 space-x-4">
-                              <span>更新: {new Date(repo.updated_at).toLocaleDateString()}</span>
-                              <span>{repo.stargazers_count} ⭐</span>
+              {session.provider === 'github' && (
+                <div className="w-full">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-6 text-center">最近更新的仓库</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {repos.map(repo => (
+                      <div key={repo.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="p-6">
+                          <div className="flex items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-3">
+                                <a 
+                                  href={repo.html_url} 
+                                  target="_blank"
+                                  className="text-lg font-bold text-gray-900 hover:text-indigo-600"
+                                >
+                                  {repo.name}
+                                </a>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                  {repo.language || 'Unknown'}
+                                </span>
+                              </div>
+                              <p className="text-gray-600 mb-4">
+                                {repo.description || '无描述'}
+                              </p>
+                              <div className="flex items-center text-sm text-gray-500 space-x-4">
+                                <span>更新: {new Date(repo.updated_at).toLocaleDateString()}</span>
+                                <span>{repo.stargazers_count} ⭐</span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+              {session.account?.provider === 'google' && (
+                <div className="w-full">
+                  <div className="bg-white rounded-xl shadow-md p-6">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">欢迎使用DG Helper</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-1">
+                          <h4 className="text-lg font-medium text-gray-800">账户信息</h4>
+                          <p className="text-gray-600">邮箱: {session.user.email}</p>
+                          <p className="text-gray-600">注册时间: {new Date(session.user.createdAt || Date.now()).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="border-t border-gray-200 pt-4">
+                        <h4 className="text-lg font-medium text-gray-800 mb-2">功能提示</h4>
+                        <ul className="list-disc list-inside text-gray-600 space-y-1">
+                          <li>点击右上角头像可查看个人资料</li>
+                          <li>随时可以切换其他登录方式</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
       </div>
