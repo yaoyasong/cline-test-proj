@@ -9,7 +9,7 @@ export default function Home() {
   useEffect(() => {
     if (session) {
       // 获取欢迎信息
-      fetch('http://localhost:8000/welcome', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/welcome`, {
         credentials: 'include'
       })
         .then(res => res.json())
